@@ -1,3 +1,16 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.ReactGridGallery_tile {
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.section-title-button:hover {
+    background-color: #f0f0f0;
+}
+
+.section-title-button:hover .section-title-button-carrot {
+    opacity: 1 !important;
+}
