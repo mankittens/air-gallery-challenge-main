@@ -1,4 +1,5 @@
 import { Clip } from "@/api/clips"
+import { memoize } from "lodash"
 
 const overlayStyle = {
     background: "linear-gradient(to bottom, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.7))",
@@ -20,7 +21,7 @@ const overlayStyle = {
     whiteSpace: "nowrap"
   } as const
   
-  export const getGalleryImage = (clip: Clip) => ({
+  export const getGalleryImage = memoize((clip: Clip) => ({
     src: clip.assets.image,
     width: clip.width,
     height: clip.height,
@@ -31,4 +32,5 @@ const overlayStyle = {
         </div>
       </div>
     ),
-  })
+  }))
+  

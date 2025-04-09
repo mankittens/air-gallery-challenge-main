@@ -5,6 +5,16 @@ import { Section } from "./Section";
 import { BoardItem } from "./BoardItem";
 import { getGalleryImage } from "./getGalleryImage";
 
+const style = {
+  padding: 32,
+} as const
+
+const boardsStyle = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 20,
+} as const
+
 export const BoardView = ({
   boards,
   clipsResponse,
@@ -13,16 +23,10 @@ export const BoardView = ({
   clipsResponse: ClipsListResponse['data']
 }) => (
   <div
-    style={{
-      padding: 32,
-    }}
+    style={style}
   >
     <Section length={boards.length} title="Boards">
-      <div style={{
-        display: "flex",
-        flexWrap: "wrap",
-        gap: 20,
-      }}>
+      <div style={boardsStyle}>
         {boards.map((board) => (
           <BoardItem key={board.id} board={board} />
         ))}
