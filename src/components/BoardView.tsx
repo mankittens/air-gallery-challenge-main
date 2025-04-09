@@ -4,8 +4,20 @@ import { ClipsListResponse } from "@/api/clips";
 import { Section } from "./Section";
 import { BoardItem } from "./BoardItem";
 import { getGalleryImage } from "./getGalleryImage";
-import { Masonry } from "masonic";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { List, AutoSizer, ListRowRenderer } from "react-virtualized";
+import justifiedLayout from "justified-layout";
+
+interface GalleryImage {
+  src: string;
+  width: number;
+  height: number;
+}
+
+interface JustifiedGalleryProps {
+  images: GalleryImage[];
+  containerWidth: number;
+}
 
 const style = {
   padding: 32,
@@ -39,6 +51,94 @@ const activeButtonStyle = {
   borderColor: 'blue',
 } as const
 
+const IMAGE_MARGIN = 8;
+const TARGET_ROW_HEIGHT = 160;
+
+function JustifiedGallery({ images, containerWidth }: JustifiedGalleryProps) {
+  const aspectRatios = useMemo(
+    () => images.map((img) => img.width / img.height),
+    [images]
+  );
+
+  const layout = useMemo(() => {
+    return justifiedLayout(aspectRatios, {
+      containerWidth,
+      targetRowHeight: TARGET_ROW_HEIGHT,
+      boxSpacing: IMAGE_MARGIN,
+    });
+  }, [aspectRatios, containerWidth]);
+
+  const rows: {
+    aspectRatio: number;
+    top: number;
+    width: number;
+    height: number;
+    left: number;}[][] = []
+  let currentRow = 0
+  let currentTop: number | null = null
+  layout.boxes.forEach(box => {
+    const top = box.top
+
+    if (currentTop === null) {
+      currentTop = top
+      rows.push([])
+    } else if (top > currentTop) {
+      currentRow += 1;
+      currentTop = top;
+      rows.push([])
+    }
+
+    rows[currentRow].push(box)
+  });
+  const rowCount = rows.length
+
+  const rowHeights: number[] = rows.map(row => row[0].height + IMAGE_MARGIN)
+
+  const rowRenderer: ListRowRenderer = ({ index, key, style }) => {
+    const row = rows[index];
+
+    return (
+      <div key={key} style={{ ...style, position: "relative" }}>
+        {row.map((box, i) => {
+          const imageIndex = layout.boxes.indexOf(box);
+          const img = images[imageIndex];
+          
+          return (
+            <img
+              key={i}
+              src={img.src}
+              style={{
+                position: "absolute",
+                left: box.left,
+                top: 0,
+                width: box.width,
+                height: box.height,
+                objectFit: "cover",
+              }}
+            />
+          );
+        })}
+      </div>
+    );
+  };
+
+  return (
+    <AutoSizer>
+      {({ width, height }) => {
+        return (
+          <List
+            width={width}
+            height={height}
+            rowCount={rowCount}
+            rowHeight={({ index }) => rowHeights[index]}
+            rowRenderer={rowRenderer}
+          />
+        );
+      }}
+    </AutoSizer>
+  );
+}
+
 export const BoardView = ({
   boards,
   clipsResponse,
@@ -46,7 +146,7 @@ export const BoardView = ({
   boards: Board[]
   clipsResponse: ClipsListResponse['data']
 }) => {
-  const [useMasonic, setUseMasonic] = useState(false);
+  const [useVirtualized, setUseVirtualized] = useState(false);
   const images = clipsResponse.clips.map(getGalleryImage);
 
   return (
@@ -61,37 +161,25 @@ export const BoardView = ({
       <Section length={clipsResponse.total} title="Assets">
         <div style={buttonContainerStyle}>
           <button
-            style={!useMasonic ? activeButtonStyle : buttonStyle}
-            onClick={() => setUseMasonic(false)}
+            style={!useVirtualized ? activeButtonStyle : buttonStyle}
+            onClick={() => setUseVirtualized(false)}
           >
             Grid
           </button>
           <button
-            style={useMasonic ? activeButtonStyle : buttonStyle}
-            onClick={() => setUseMasonic(true)}
+            style={useVirtualized ? activeButtonStyle : buttonStyle}
+            onClick={() => setUseVirtualized(true)}
           >
-            Masonry
+            Virtualized
           </button>
         </div>
-        {useMasonic ? (
-          <Masonry
-            // Experimental: has issues rendering newly loaded assets, but is much faster; does not use the same grid layout as Air
-            items={images}
-            columnGutter={8}
-            columnWidth={300}
-            overscanBy={2}
-            render={({ data }) => (
-              <img
-                src={data.src}
-                alt=""
-                style={{
-                  width: '100%',
-                  height: 'auto',
-                  objectFit: 'cover',
-                }}
-              />
-            )}
-          />
+        {useVirtualized ? (
+          <div style={{ height: 'calc(100vh - 200px)' }}>
+            <JustifiedGallery
+              images={images}
+              containerWidth={window.innerWidth - 64}
+            />
+          </div>
         ) : (
           <Gallery
             images={images}
