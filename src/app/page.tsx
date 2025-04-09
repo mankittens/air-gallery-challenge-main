@@ -46,7 +46,7 @@ export default function Home() {
     } finally {
       setIsLoadingClips(false)
     }
-  }, [isLoadingClips])
+  }, [isLoadingClips, clipsResponse.pagination.cursor, clipsResponse.pagination.hasMore])
 
   // ...when scrolling to the bottom of the page
   useEffect(() => {
